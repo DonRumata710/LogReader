@@ -53,10 +53,13 @@ jobs:
         version: '5.14.2'
         host: 'windows'
 
-    - name: Set up MSVC Environment
-      shell: cmd
+    - name: Install MinGW
       run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+        choco install mingw
+
+    - name: Add MinGW to PATH
+      run: |
+        echo "::add-path::C:\ProgramData\chocolatey\bin"
 
     - name: Configure with qmake
       shell: cmd
@@ -66,7 +69,7 @@ jobs:
     - name: Build LogViewer
       shell: cmd
       run: |
-        nmake
+        mingw32-make
 
     - name: Package for Windows
       run: |
