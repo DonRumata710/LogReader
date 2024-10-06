@@ -53,11 +53,18 @@ jobs:
         version: '5.14.2'
         host: 'windows'
 
+    - name: Set up MSVC Environment
+      shell: cmd
+      run: |
+        "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+
     - name: Configure with qmake
+      shell: cmd
       run: |
         qmake -o Makefile LogReader.pro
 
     - name: Build LogViewer
+      shell: cmd
       run: |
         nmake
 
