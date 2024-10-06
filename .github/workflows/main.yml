@@ -2,62 +2,73 @@ name: Build and Package
 
 on:
   push:
-    branches:
-      - main  # 或您希望触发构建的其他分支
+    branches: [main]  # 根据您的需求修改分支名称
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]  # 根据需要选择操作系统
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        version: '5.14.2'  # 替换为您的 Qt 版本
+        version: '5.15.2'  # 请替换为您的 Qt 版本
         host: ${{ matrix.os }}
+        arch: 'gcc_64'  # 对于 Linux，可以指定架构
 
-    - name: Build Project
+    - name: Build on Linux
+      if: runner.os == 'Linux'
       run: |
-        qmake
-        make
-      if: runner.os != 'Windows'
+        mkdir build && cd build
+        qmake ../LogReager.pro
+        make -j$(nproc)
 
-    - name: Build Project on Windows
+    - name: Build on macOS
+      if: runner.os == 'macOS'
       run: |
-        qmake
-        nmake
+        mkdir build && cd build
+        qmake ../LogReager.pro
+        make -j$(sysctl -n hw.logicalcpu)
+
+    - name: Build on Windows
       if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        mkdir build && cd build
+        qmake ..\LogReager.pro
+        nmake
 
     - name: Package on Linux
       if: runner.os == 'Linux'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y patchelf
+        cd build
         wget -O linuxdeployqt https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
         chmod +x linuxdeployqt
-        ./linuxdeployqt ./LogReader -appimage
-        
+        ./linuxdeployqt ./LogReager -appimage
+
     - name: Package on macOS
       if: runner.os == 'macOS'
       run: |
-        macdeployqt ./LogReader.app
-        
+        cd build
+        /usr/local/opt/qt/bin/macdeployqt LogReager.app
+
     - name: Package on Windows
       if: runner.os == 'Windows'
+      shell: cmd
       run: |
-        windeployqt ./LogReader.exe
+        cd build
+        windeployqt LogReager.exe
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ runner.os }}-artifact
         path: |
-          ./build/LogReager.exe
+          build/**
