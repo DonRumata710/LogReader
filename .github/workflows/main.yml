@@ -24,24 +24,79 @@ jobs:
         host: 'linux'
 
     - name: Install dependencies
-      run: sudo apt-get install -y build-essential cmake
+      run: sudo apt-get install -y build-essential qt5-qmake qtbase5-dev
 
-    - name: Create Build Directory
-      run: mkdir build
-
-    - name: Configure with CMake
+    - name: Configure with qmake
       run: |
-        cd build
-        cmake ..
+        qmake -o Makefile LogViewer.pro
 
     - name: Build LogViewer
       run: |
-        cd build
         make
+
+    - name: Package for Linux
+      run: |
+        mkdir -p release/linux
+        cp LogViewer release/linux/
+        linuxdeploy --appdir=release/linux --output appimage
+
+  build_windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.14.2'
+        host: 'windows'
+
+    - name: Configure with qmake
+      run: |
+        qmake -o Makefile LogViewer.pro
+
+    - name: Build LogViewer
+      run: |
+        nmake
+
+    - name: Package for Windows
+      run: |
+        mkdir -p release/windows
+        windeployqt --release LogViewer.exe
+        mv LogViewer.exe release/windows/
+
+  build_macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.14.2'
+        host: 'mac'
+
+    - name: Configure with qmake
+      run: |
+        qmake -o Makefile LogViewer.pro
+
+    - name: Build LogViewer
+      run: |
+        make
+
+    - name: Package for macOS
+      run: |
+        mkdir -p release/macos
+        macdeployqt LogViewer.app
+        mv LogViewer.app release/macos/
 
   release:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, build_windows, build_macos]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -49,12 +104,27 @@ jobs:
     - name: Upload compiled binaries
       uses: actions/upload-artifact@v3
       with:
-        name: LogViewer
-        path: build/LogViewer
+        name: LogViewer-Linux
+        path: release/linux/*
+
+    - name: Upload Windows binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: LogViewer-Windows
+        path: release/windows/*
+
+    - name: Upload macOS binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: LogViewer-macOS
+        path: release/macos/*
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: build/LogViewer
+        files: |
+          release/linux/*
+          release/windows/*
+          release/macos/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
