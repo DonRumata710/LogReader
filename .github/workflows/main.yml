@@ -28,7 +28,7 @@ jobs:
 
     - name: Configure with qmake
       run: |
-        qmake -o Makefile LogViewer.pro
+        qmake -o Makefile LogReader.pro
 
     - name: Build LogViewer
       run: |
@@ -55,7 +55,7 @@ jobs:
 
     - name: Configure with qmake
       run: |
-        qmake -o Makefile LogViewer.pro
+        qmake -o Makefile LogReader.pro
 
     - name: Build LogViewer
       run: |
@@ -82,7 +82,7 @@ jobs:
 
     - name: Configure with qmake
       run: |
-        qmake -o Makefile LogViewer.pro
+        qmake -o Makefile LogReader.pro
 
     - name: Build LogViewer
       run: |
